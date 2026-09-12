@@ -9,7 +9,9 @@ import { fileURLToPath } from 'node:url';
 import EmbeddedPostgres from 'embedded-postgres';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const DATA_DIR = path.join(__dirname, '..', '..', '.tmp', 'test-db');
+const DEFAULT_DATA_DIR = path.join(__dirname, '..', '..', '.tmp', 'test-db');
+// WSL's /mnt/c is FAT-like (777) — Postgres init requires 0700. Fall back to /tmp on WSL/Linux when project is on /mnt/c.
+const DATA_DIR = process.env.PG_DATA_DIR || (DEFAULT_DATA_DIR.startsWith('/mnt/c') && process.platform === 'linux' ? '/tmp/job-board-test-db' : DEFAULT_DATA_DIR);
 const PORT = 55432;
 
 /** Connection string the API under test should use. */

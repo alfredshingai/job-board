@@ -3,6 +3,10 @@
 
 generator client {
   provider = "prisma-client-js"
+  // Windows dev + WSL/Render Linux (debian) + let `native` cover the runner's OS.
+  // Without this, `npx prisma generate` on Windows creates a Windows-only
+  // engine and integration tests fail on WSL with "could not locate Query Engine for debian-openssl-3.0.x".
+  binaryTargets = ["native", "debian-openssl-3.0.x", "windows"]
 }
 
 datasource db {
