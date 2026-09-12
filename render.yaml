@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: devhire-api
+    env: node
+    plan: free
+    rootDir: backend
+    buildCommand: npm install && npx prisma generate && npm run build
+    startCommand: npm run start:migrate
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: DATABASE_URL
+        sync: false # set to Neon pooled URL + &sslmode=require
+      - key: JWT_SECRET
+        sync: false # generate: node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"
+      - key: JWT_EXPIRES_IN
+        value: 7d
+      - key: CORS_ORIGIN
+        sync: false # https://your-vercel-app.vercel.app

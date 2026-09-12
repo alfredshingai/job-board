@@ -20,8 +20,7 @@ out/
 .DS_Store
 Thumbs.db
 
-# Prisma
-prisma/migrations/
+# Prisma - keep migrations committed for Render `migrate deploy`
 
 # Vercel
 .vercel
