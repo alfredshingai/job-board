@@ -28,3 +28,6 @@ prisma/migrations/
 
 # Render
 .render
+*.tsbuildinfo
+vite.config.js
+vite.config.d.ts
