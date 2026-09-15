@@ -2,9 +2,11 @@
 
 Production-ready MVP for a recruiter-friendly job board. Recruiter-friendly, portfolio-grade, weekend-scope with clear extension paths. Deployed as **Express API on Render** + **React SPA on Vercel** + **PostgreSQL on Neon (free tier)**.
 
-Live: `frontend → Vercel` · `backend → Render` · `DB → Neon`
+**Live:** **Frontend:** https://job-board-devhire.vercel.app · **API:** https://devhire-api.onrender.com · **DB:** Neon Postgres
 
-![Stack](https://img.shields.io/badge/Backend-Express_5_+_Prisma_6_+_Postgres-black) ![Frontend](https://img.shields.io/badge/Frontend-React_19_+_Vite_6_+_Tailwind_4-black) ![Auth](https://img.shields.io/badge/Auth-JWT_+_bcryptjs-blue) ![Tests](https://img.shields.io/badge/Tests-Vitest_+_Supertest_+_embedded--postgres-green)
+> Demo logins (seeded): `admin@devhire.dev / Admin123!` (Admin) · `recruiter@nimbuslabs.io / Company123!` (Company) · `candidate@example.com / Candidate123!` (Seeker)
+
+![Stack](https://img.shields.io/badge/Backend-Express_5_+_Prisma_6_+_Postgres-black) ![Frontend](https://img.shields.io/badge/Frontend-React_19_+_Vite_6_+_Tailwind_4-black) ![Auth](https://img.shields.io/badge/Auth-JWT_+_bcryptjs-blue) ![Tests](https://img.shields.io/badge/Tests-Vitest_+_Supertest_+_embedded--postgres-green) ![Deploy](https://img.shields.io/badge/Deploy-Render_+_Vercel_+_Neon-brightgreen)
 
 ## Features
 
@@ -149,29 +151,28 @@ npm run test:unit # fast unit tests only (no DB)
 
 ## Deployment
 
-### Backend → Render (free)
+### Backend → Render (free) — **Deployed at https://devhire-api.onrender.com**
 
 1. Push to GitHub (this repo is already a monorepo — set Render **Root Directory** to `backend`).
-2. Render > New Web Service > connect `alfredshingai/job-board` > Build command: `npm install && npx prisma generate && npm run build`
-   Start command: `npm run start:migrate` (runs `prisma migrate deploy && node dist/index.js`).
-   If you used `db:push` locally without migrations, commit the generated `prisma/migrations` folder or switch start to `node dist/index.js` + one-off `npx prisma db push`.
+2. Render > New **Blueprint** (uses `render.yaml:1`) or **Web Service** > connect `alfredshingai/job-board` > Build: `npm install --include=dev && npx prisma generate && npm run build` → Output `dist`
+   Start: `npm run start:render` (`backend/package.json:16` → `prisma migrate resolve --rolled-back || true; prisma migrate deploy || db push; node dist/index.js` — self-heals free-tier `P3009` without Shell).
 3. Environment:
-   - `DATABASE_URL` = Neon pooled URL + `&sslmode=require` (Neon > Connection string > Pooled)
-   - `JWT_SECRET` = `node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"`
-   - `CORS_ORIGIN` = `https://your-vercel-app.vercel.app`
-   - `NODE_ENV=production`, `PORT=10000` (Render injects PORT)
-4. Health check path: `/api/health`
-5. After first deploy: `npx prisma db seed` via Render Shell (or enable `prisma.seed` in build).
+   - `DATABASE_URL` = Neon **Pooled** URL + `?sslmode=require&channel_binding=require` (e.g. `postgresql://neondb_owner:…@ep-damp-resonance-ay6y5ut3-pooler.c-5.us-east-2.aws.neon.tech/neondb?sslmode=require&channel_binding=require`)
+   - `JWT_SECRET` = `openssl rand -hex 48` or `node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"` (≥32 chars)
+   - `CORS_ORIGIN` = `https://job-board-devhire.vercel.app` (`backend/src/config/env.ts:47`)
+   - `NODE_ENV=production`, `PORT=10000`
+4. Health: `GET https://devhire-api.onrender.com/api/health` → `{"status":"ok"}` (`backend/src/app.ts:12`)
+5. Seed (free tier has no Shell — run from WSL/Windows with `DATABASE_URL` set): `npx prisma db seed` → 10 companies, 36 jobs (31 approved) (`backend/prisma/seed.ts:1`)
 
-**Why `start:migrate`**: `prisma migrate deploy` is idempotent and required for Neon. The app's `env.ts:30-41` refuses to boot in production without `DATABASE_URL` and a strong `JWT_SECRET`.
+**Why `start:render`**: `migrate deploy` is idempotent; the `resolve --rolled-back || true` clears the `P3009` failed-migration left by the first deploy, and the `|| db push` fallback handles Free plan without Shell. The app's `env.ts:30-41` refuses to boot without `DATABASE_URL` and a ≥32-char `JWT_SECRET`.
 
-### Frontend → Vercel (free)
+### Frontend → Vercel (free) — **Deployed at https://job-board-devhire.vercel.app**
 
-1. Vercel > New Project > import `alfredshingai/job-board` > **Root Directory** `frontend`.
-2. Build command: `npm run build` (runs `tsc -b && vite build`), Output: `dist`.
-3. Environment: `VITE_API_URL=https://your-render-api.onrender.com` (no trailing slash).
-4. No `vercel.json` needed — SPA fallback is handled by Vite's `index.html`. If you add API routes later, set `rewrites` to `/{.*} → /index.html`.
-5. Redeploy after setting env.
+1. Vercel > New Project > import `alfredshingai/job-board` > **Root Directory** `frontend` (`frontend/package.json:8`).
+2. Build: `npm run build` (`tsc -b && vite build` → `dist`), Output: `dist`.
+3. Environment: `VITE_API_URL=https://devhire-api.onrender.com` (`frontend/src/api/client.ts:1` strips trailing slash, falls back to `http://localhost:4000` locally).
+4. No `vercel.json` needed — SPA fallback is handled by Vite's `index.html`.
+5. Redeploy after setting env — JS bundle should contain `devhire-api.onrender.com` (check `https://job-board-devhire.vercel.app/assets/index-*.js`).
 
 ### Database → Neon (free)
 
